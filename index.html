@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skillto - Upskilling Forecaster</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle fill='%23007BFF' cx='50' cy='50' r='50'/></svg>">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+body{font-family:'Segoe UI',sans-serif;margin:0;padding:20px;background:#d0d5dc;min-height:100vh;display:flex;justify-content:center;align-items:flex-start;} 
+body.dark{background:#121212;color:#f0f0f0;} 
+.app-frame{max-width:900px;width:100%;border:2px solid #c1c4cd;border-radius:25px;padding:30px 25px;background:#e0e5ec;box-shadow:20px 20px 60px #c1c4cd,-20px -20px 60px #ffffff;position:relative;transition:all 0.3s;} 
+body.dark .app-frame{background:#1e1e1e;box-shadow:20px 20px 60px #161616,-20px -20px 60px #262626;border-color:#444;color:#f0f0f0;} 
+h1,h2{text-align:center;margin:10px 0;} 
+label{display:block;margin-top:10px;} 
+input,select,textarea{margin-top:10px;margin-bottom:10px;padding:12px 15px;width:calc(100% - 30px);border-radius:12px;border:none;outline:none;font-size:16px;background:#e0e5ec;box-shadow:inset 6px 6px 12px #c1c4cd,inset -6px -6px 12px #ffffff;box-sizing:border-box;transition:all 0.3s;} 
+body.dark input,body.dark select,body.dark textarea{background:#1e1e1e;box-shadow:inset 6px 6px 12px #161616,inset -6px -6px 12px #262626;color:#f0f0f0;} 
+button{cursor:pointer;margin-top:15px;padding:12px 15px;width:calc(100% - 30px);border-radius:12px;border:none;box-shadow:6px 6px 12px #c1c4cd,-6px -6px 12px #ffffff;font-size:16px;background:#e0e5ec;transition:all 0.3s;} 
+button:hover{box-shadow:inset 6px 6px 12px #c1c4cd,inset -6px -6px 12px #ffffff;} 
+body.dark button{background:#1e1e1e;box-shadow:6px 6px 12px #161616,-6px -6px 12px #262626;color:#f0f0f0;} 
+.progress-container{margin-top:5px;height:20px;border-radius:12px;background:#e0e5ec;box-shadow:inset 6px 6px 12px #c1c4cd,inset -6px -6px 12px #ffffff;overflow:hidden;} 
+body.dark .progress-container{background:#1e1e1e;box-shadow:inset 6px 6px 12px #161616,inset -6px -6px 12px #262626;} 
+.progress-bar{height:100%;background:#007bff;width:0%;border-radius:12px;} 
+canvas{margin-top:20px;border-radius:15px;background:#e0e5ec;box-shadow:20px 20px 60px #c1c4cd,-20px -20px 60px #ffffff;width:100%;max-width:100%;} 
+body.dark canvas{background:#1e1e1e;box-shadow:20px 20px 60px #161616,-20px -20px 60px #262626;} 
+.analysis-report,.recommendations{margin-top:15px;padding:10px;border-radius:12px;background:#f0f0f0;} 
+body.dark .analysis-report,body.dark .recommendations{background:#2a2a2a;} 
+.dark-mode-toggle{position:absolute;top:15px;right:15px;cursor:pointer;padding:8px 12px;border-radius:12px;background:#e0e5ec;box-shadow:6px 6px 12px #c1c4cd,-6px -6px 12px #ffffff;} 
+body.dark .dark-mode-toggle{background:#1e1e1e;box-shadow:6px 6px 12px #161616,-6px -6px 12px #262626;color:#f0f0f0;} 
+footer{text-align:center;margin-top:20px;font-size:14px;color:#555;} 
+body.dark footer{color:#aaa;} 
+@media (max-width:480px){h1{font-size:20px;}h2{font-size:16px;}input,select,textarea,button{font-size:14px;padding:8px;} .progress-container{height:16px;} canvas{height:200px;}}
+@media (min-width:481px) and (max-width:768px){h1{font-size:24px;}h2{font-size:18px;} .progress-container{height:18px;} canvas{height:220px;}}
+</style>
+</head>
+<body>
+<div class="app-frame">
+<div class="dark-mode-toggle" onclick="toggleDarkMode()">🌓 Dark Mode</div>
+<h1>Skillto</h1>
+
+<h2>User Profile</h2>
+<label>Name:</label><input type="text" id="userName" placeholder="Enter your name">
+<label>Industry:</label>
+<input type="text" id="userIndustry" list="industryList" placeholder="Select industry">
+<label>Role:</label>
+<input type="text" id="userRole" list="roleList" placeholder="Select role">
+<label>Experience (years):</label><input type="number" id="userExp" placeholder="Years of experience">
+<label>Career Goals:</label>
+<input type="text" id="careerGoals" list="careerGoalsList" placeholder="Select career goal">
+
+<h2>Skills</h2>
+<div id="skillsContainer"></div>
+<button onclick="addSkill()">Add Skill</button>
+<button onclick="forecastAll()">Forecast Skills</button>
+<button onclick="generateReport()">Generate Analysis Report</button>
+<button onclick="downloadReport()">Download PDF Report</button>
+<button onclick="exportProfile()">Export Profile</button>
+<input type="file" onchange="importProfile(event)">
+
+<h2>Skill Progress Chart</h2>
+<canvas id="skillChart"></canvas>
+
+<h2>Analysis Report</h2>
+<div class="analysis-report" id="analysisReport"></div>
+
+<h2>Recommendations</h2>
+<div class="recommendations" id="recommendations"></div>
+
+<footer>© Skillto 2025</footer>
+
+<!-- Datalists -->
+<datalist id="industryList">
+<option value="Information Technology"></option>
+<option value="Healthcare"></option>
+<option value="Finance"></option>
+<option value="Education"></option>
+<option value="Energy"></option>
+<option value="Aerospace"></option>
+<option value="Automotive"></option>
+<option value="Agriculture"></option>
+<option value="Media & Entertainment"></option>
+<option value="Telecommunications"></option>
+<option value="Retail"></option>
+<option value="Manufacturing"></option>
+<option value="Biotech"></option>
+<option value="Pharmaceuticals"></option>
+<option value="Logistics"></option>
+<option value="Hospitality"></option>
+<option value="Entertainment"></option>
+<option value="Consulting"></option>
+<option value="Government"></option>
+<option value="Insurance"></option>
+<option value="Real Estate"></option>
+<option value="Mining"></option>
+<option value="Cybersecurity"></option>
+<option value="AI"></option>
+<option value="Robotics"></option>
+<option value="Renewable Energy"></option>
+<option value="E-commerce"></option>
+<option value="Cloud"></option>
+<option value="Social Media"></option>
+<option value="Marketing"></option>
+<option value="Data Analytics"></option>
+<option value="Nanotech"></option>
+<option value="Space Tech"></option>
+<option value="Gaming"></option>
+<option value="Blockchain"></option>
+<option value="IoT"></option>
+<option value="Smart Cities"></option>
+<option value="HR"></option>
+<option value="Legal"></option>
+<option value="Travel"></option>
+<option value="Food Tech"></option>
+<option value="Automotive Engineering"></option>
+<option value="Oil & Gas"></option>
+<option value="Supply Chain"></option>
+<option value="Defense"></option>
+<option value="Smart Devices"></option>
+<option value="Fintech"></option>
+<option value="Virtual Reality"></option>
+<option value="Augmented Reality"></option>
+<option value="EdTech"></option>
+<option value="Telecommunications"></option>
+</datalist>
+
+<datalist id="roleList">
+<option value="Software Engineer"></option>
+<option value="Data Scientist"></option>
+<option value="Project Manager"></option>
+<option value="UX Designer"></option>
+<option value="Cloud Architect"></option>
+<option value="Cybersecurity Analyst"></option>
+<option value="Product Manager"></option>
+<option value="AI Specialist"></option>
+<option value="DevOps Engineer"></option>
+<option value="Financial Analyst"></option>
+<option value="Business Analyst"></option>
+<option value="QA Engineer"></option>
+<option value="Network Engineer"></option>
+<option value="Database Administrator"></option>
+<option value="IT Manager"></option>
+<option value="HR Manager"></option>
+<option value="Marketing Manager"></option>
+<option value="Sales Executive"></option>
+<option value="Consultant"></option>
+<option value="AI Researcher"></option>
+<option value="Robotics Engineer"></option>
+<option value="Blockchain Developer"></option>
+<option value="Mobile App Developer"></option>
+<option value="Frontend Developer"></option>
+<option value="Backend Developer"></option>
+<option value="Full Stack Developer"></option>
+<option value="Game Developer"></option>
+<option value="Web Designer"></option>
+<option value="Cloud Engineer"></option>
+<option value="Security Consultant"></option>
+<option value="System Analyst"></option>
+<option value="Research Scientist"></option>
+<option value="Machine Learning Engineer"></option>
+<option value="Network Architect"></option>
+<option value="Technical Writer"></option>
+<option value="Operations Manager"></option>
+<option value="UI Designer"></option>
+<option value="Data Engineer"></option>
+<option value="Cloud Solutions Architect"></option>
+<option value="Software Tester"></option>
+<option value="SEO Specialist"></option>
+<option value="Digital Marketer"></option>
+<option value="Content Strategist"></option>
+<option value="Product Owner"></option>
+<option value="Scrum Master"></option>
+<option value="IT Auditor"></option>
+<option value="Business Intelligence Analyst"></option>
+<option value="Legal Advisor"></option>
+<option value="Healthcare Administrator"></option>
+<option value="Educational Technologist"></option>
+</datalist>
+
+<datalist id="skillList">
+<option value="JavaScript"></option>
+<option value="Python"></option>
+<option value="Java"></option>
+<option value="SQL"></option>
+<option value="Cloud Computing"></option>
+<option value="AWS"></option>
+<option value="Docker"></option>
+<option value="Kubernetes"></option>
+<option value="Cybersecurity"></option>
+<option value="Blockchain"></option>
+<option value="Machine Learning"></option>
+<option value="AI"></option>
+<option value="Data Analysis"></option>
+<option value="Big Data"></option>
+<option value="UX Design"></option>
+<option value="UI Design"></option>
+<option value="HTML"></option>
+<option value="CSS"></option>
+<option value="React"></option>
+<option value="Angular"></option>
+<option value="Node.js"></option>
+<option value="Django"></option>
+<option value="Flask"></option>
+<option value="DevOps"></option>
+<option value="Git"></option>
+<option value="CI/CD"></option>
+<option value="Agile"></option>
+<option value="Scrum"></option>
+<option value="Project Management"></option>
+<option value="Tableau"></option>
+<option value="Power BI"></option>
+<option value="Excel"></option>
+<option value="R"></option>
+<option value="MATLAB"></option>
+<option value="TensorFlow"></option>
+<option value="PyTorch"></option>
+<option value="NLP"></option>
+<option value="IoT"></option>
+<option value="Robotics"></option>
+<option value="Networking"></option>
+<option value="Linux"></option>
+<option value="Windows Server"></option>
+<option value="Mobile Development"></option>
+<option value="Android"></option>
+<option value="iOS"></option>
+<option value="SEO"></option>
+<option value="Marketing Analytics"></option>
+<option value="Communication"></option>
+<option value="Leadership"></option>
+<option value="Public Speaking"></option>
+<option value="Critical Thinking"></option>
+<option value="Problem Solving"></option>
+<option value="Time Management"></option>
+<option value="Cloud Security"></option>
+</datalist>
+
+<datalist id="careerGoalsList">
+<option value="Become a Senior Developer"></option>
+<option value="Lead a Product Team"></option>
+<option value="Master Cloud Technologies"></option>
+<option value="Achieve Data Scientist Role"></option>
+<option value="Lead AI Projects"></option>
+<option value="Become Cloud Architect"></option>
+<option value="Expert in Cybersecurity"></option>
+<option value="Lead Smart City Projects"></option>
+<option value="Improve Software Testing Skills"></option>
+<option value="Develop Telemedicine Solutions"></option>
+<option value="Become Project Manager"></option>
+<option value="Lead Data Analytics Team"></option>
+<option value="Master UX/UI Design"></option>
+<option value="Become Full Stack Developer"></option>
+<option value="Publish AI Research"></option>
+<option value="Become DevOps Expert"></option>
+<option value="Lead E-commerce Platform"></option>
+<option value="Master Blockchain Development"></option>
+<option value="Achieve Marketing Analytics Role"></option>
+<option value="Lead Cybersecurity Team"></option>
+<option value="Become Robotics Specialist"></option>
+<option value="Cloud Security Expert"></option>
+<option value="Lead IoT Projects"></option>
+<option value="Lead Mobile App Development"></option>
+<option value="Become Machine Learning Engineer"></option>
+<option value="Data Engineering Expert"></option>
+<option value="Achieve Product Owner Role"></option>
+<option value="Become Scrum Master"></option>
+<option value="Lead Financial Technology Projects"></option>
+<option value="Expert in Big Data"></option>
+<option value="Lead Educational Tech Solutions"></option>
+<option value="Improve Communication Skills"></option>
+<option value="Become AI Consultant"></option>
+<option value="Lead Renewable Energy Tech"></option>
+<option value="Improve Leadership Skills"></option>
+<option value="Become Technical Writer"></option>
+<option value="Lead SaaS Development"></option>
+<option value="Expert in Agile Management"></option>
+<option value="Lead Blockchain Startups"></option>
+<option value="Achieve Cloud Solutions Architect"></option>
+<option value="Lead Healthcare IT Projects"></option>
+<option value="Become Digital Marketing Expert"></option>
+<option value="Lead Social Media Campaigns"></option>
+<option value="Achieve Cybersecurity Certification"></option>
+<option value="Lead Robotics Team"></option>
+<option value="Become Data Visualization Specialist"></option>
+<option value="Lead Software QA Team"></option>
+<option value="Become NLP Specialist"></option>
+<option value="Lead Cloud Migration Projects"></option>
+<option value="Become EdTech Consultant"></option>
+</datalist>
+
+<script>
+// Dark Mode
+function toggleDarkMode(){document.body.classList.toggle('dark');}
+
+// Add Skill
+function addSkill(){
+    const container=document.getElementById('skillsContainer');
+    const div=document.createElement('div');
+    div.className='skill-set';
+    div.innerHTML=`
+    <label>Skill Name:</label>
+    <input type="text" class="skillName" list="skillList" placeholder="Skill name">
+    <label>Target Level:</label>
+    <select class="targetLevel">
+        <option value="intermediate">Intermediate</option>
+        <option value="advanced">Advanced</option>
+        <option value="expert">Expert</option>
+    </select>
+    <label>Hours per Week:</label><input type="number" class="hoursPerWeek" placeholder="e.g.,5">
+    <label>Break Phase (weeks):</label><input type="number" class="breakWeeks" value="0">
+    <label>Layoff Phase (weeks):</label><input type="number" class="layoffWeeks" value="0">
+    <div class="progress-container"><div class="progress-bar"></div></div>
+    <div class="result"></div><hr>`;
+    container.appendChild(div);
+}
+
+// Forecast with weekly progression
+let chart;
+function forecastAll(){
+    const skillDivs=document.querySelectorAll('.skill-set');
+    const datasets=[],labels=[];
+    let maxWeeks=12;
+
+    skillDivs.forEach(div=>{
+        const name=div.querySelector('.skillName').value||'Unnamed';
+        const level=div.querySelector('.targetLevel').value;
+        const hours=parseFloat(div.querySelector('.hoursPerWeek').value)||0;
+        const breakW=parseInt(div.querySelector('.breakWeeks').value)||0;
+        const layoff=parseInt(div.querySelector('.layoffWeeks').value)||0;
+
+        const levelFactor=(level==='intermediate'?0.5:(level==='advanced'?0.8:1));
+        let progressArr=[];
+        let progress=0;
+
+        for(let w=1;w<=maxWeeks;w++){
+            if(w<=breakW) progress+=0;
+            else if(w<=breakW+layoff) progress+=hours*levelFactor*0.3;
+            else progress+=hours*levelFactor;
+            progress=Math.min(100,progress);
+            progressArr.push(progress);
+        }
+
+        datasets.push({label:name,data:progressArr,fill:false,borderColor:'#'+Math.floor(Math.random()*16777215).toString(16),tension:0.2});
+    });
+
+    labels.length=0;
+    for(let i=1;i<=maxWeeks;i++) labels.push('Week '+i);
+
+    const ctx=document.getElementById('skillChart').getContext('2d');
+    if(chart) chart.destroy();
+    chart=new Chart(ctx,{type:'line',data:{labels:labels,datasets:datasets},options:{responsive:true,plugins:{legend:{position:'top'}}}});
+
+    // Recommendations
+    const recDiv=document.getElementById('recommendations');
+    recDiv.innerHTML='';
+    datasets.forEach(ds=>{
+        const lastVal=ds.data[ds.data.length-1];
+        if(lastVal<50) recDiv.innerHTML+=`<p>Focus more on "${ds.label}" to achieve your target level.</p>`;
+        else recDiv.innerHTML+=`<p>"${ds.label}" is progressing well. Keep consistent effort.</p>`;
+    });
+
+    // Update progress bars
+    skillDivs.forEach((div,i)=>{
+        div.querySelector('.progress-bar').style.width=datasets[i].data[datasets[i].data.length-1]+'%';
+    });
+}
+
+// 100-word Analysis Report
+function generateReport(){
+    const skillDivs=document.querySelectorAll('.skill-set');
+    let report='Analysis Report: You have entered your skills and targets. ';
+    skillDivs.forEach(div=>{
+        const name=div.querySelector('.skillName').value||'Unnamed';
+        const level=div.querySelector('.targetLevel').value;
+        const hours=parseFloat(div.querySelector('.hoursPerWeek').value)||0;
+        const breakW=parseInt(div.querySelector('.breakWeeks').value)||0;
+        const layoff=parseInt(div.querySelector('.layoffWeeks').value)||0;
+        report+=`Skill "${name}" targeting ${level} level with ${hours} hours/week, break ${breakW} weeks, layoff ${layoff} weeks. `;
+    });
+    report+='Focus on low-progress skills, manage breaks efficiently, follow weekly structured learning. Align with industry trends, emerging technologies, and certifications. Track milestones, use self-assessment quizzes, and adjust strategy regularly. Consistent effort maximizes career growth, prepares for desired roles, and increases competitiveness.';
+    document.getElementById('analysisReport').innerText=report;
+}
+
+// PDF Download
+function downloadReport(){
+    const element=document.getElementById('analysisReport');
+    html2pdf().from(element).save('Upskilling_Report.pdf');
+}
+
+// Profile export/import placeholders
+function exportProfile(){alert('Export profile (JSON) functionality goes here');}
+function importProfile(event){alert('Import profile (JSON) functionality goes here');}
+</script>
+</div>
+</body>
+</html>
